@@ -422,13 +422,22 @@ pub fn parse_candles(rows: &[Vec<Value>], with_oi: bool) -> Vec<Candle> {
     rows.iter()
         .filter_map(|r| {
             let ts = r.first().map(num)? as i64;
+            let (o, h, l, c) = (
+                r.get(1).map(num).unwrap_or(0.0),
+                r.get(2).map(num).unwrap_or(0.0),
+                r.get(3).map(num).unwrap_or(0.0),
+                r.get(4).map(num).unwrap_or(0.0),
+            );
+            // Repair bars whose open/close fall outside high/low (the chart
+            // rejects the whole series on one bad bar), as Kotak does.
+            let (hi, lo) = (o.max(h).max(l).max(c), o.min(h).min(l).min(c));
             Some(Candle {
                 timestamp: ts,
-                open: r.get(1).map(num).unwrap_or(0.0),
-                high: r.get(2).map(num).unwrap_or(0.0),
-                low: r.get(3).map(num).unwrap_or(0.0),
-                close: r.get(4).map(num).unwrap_or(0.0),
-                volume: r.get(5).map(num).unwrap_or(0.0) as i64,
+                open: o,
+                high: hi,
+                low: lo,
+                close: c,
+                volume: (r.get(5).map(num).unwrap_or(0.0) as i64).max(0),
                 oi: if with_oi && r.len() == 7 {
                     r.get(6).map(num).unwrap_or(0.0) as i64
                 } else {
