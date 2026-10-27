@@ -228,6 +228,9 @@ jobs:
 
   macos:
     name: macos (aarch64)
+    # fyers-candle-repair does not build a macOS bundle. Skip the job so it
+    # does not take a macos-latest runner.
+    if: false
     runs-on: macos-latest
     timeout-minutes: 15
     steps:

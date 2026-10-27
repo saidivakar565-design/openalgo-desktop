@@ -536,8 +536,14 @@ class Matrices(unittest.TestCase):
             ci = f.read()
         for p in rb.PLATFORMS:
             self.assertIn(f"\n          - name: {p.name}\n", release)
-            self.assertIn(f"\n          - name: {p.name}\n", ci)
-            self.assertIn(f"bundles-${{{{ matrix.name }}}}", ci)
+        # This branch's tauri-build is the Windows installer only. The
+        # frontend job runs this test, and tauri-build waits on that job, so
+        # the other platform names must not be required in ci.yml or the
+        # Windows bundle never starts. release.yml still lists every platform.
+        self.assertIn("\n          - name: windows-x86_64\n", ci)
+        for dropped in ("linux-x86_64", "linux-aarch64", "macos-aarch64", "macos-x86_64"):
+            self.assertNotIn(f"\n          - name: {dropped}\n", ci)
+        self.assertIn("bundles-${{ matrix.name }}", ci)
         self.assertEqual(len(re.findall(r"\n          - name: ", release)), len(rb.PLATFORMS))
 
 
